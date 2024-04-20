@@ -8,11 +8,13 @@ import pandas as pd
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 
 nltk.download('stopwords')
 nltk.download('punkt')
 
 app = Flask(__name__)
+CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 df_images_data = pd.read_csv("animals_images_data.csv")
 
@@ -54,7 +56,7 @@ processed_documents = preprocess_documents(alt_desc_list_of_strings)
 vectorizer = TfidfVectorizer()
 tfidf_matrix = vectorizer.fit_transform(processed_documents)
 
-@app.route('/search', methods=['POST'])
+@app.route('/api/v1/search', methods=['POST'])
 def search():
     query = request.form.get('query')
     preprocessed_query = preprocess_query(query)
@@ -70,9 +72,6 @@ def search():
     df_full_url_sorted_similarity_score_desc = df_full_url_sorted_similarity_score_desc.reindex(columns=['similarity_score', 'image_url', 'alt_text'])
     df_full_url_sorted_similarity_score_desc['similarity_score'] = df_full_url_sorted_similarity_score_desc['similarity_score'].round(0)
     df_full_url_sorted_similarity_score_desc['similarity_score'] = df_full_url_sorted_similarity_score_desc['similarity_score'].astype(int)
-    df_full_url_sorted_similarity_score_desc['similarity_score'] = df_full_url_sorted_similarity_score_desc['similarity_score'].astype(str)
-    add_percent = lambda x: str(x) + '%'
-    df_full_url_sorted_similarity_score_desc['similarity_score'] = df_full_url_sorted_similarity_score_desc['similarity_score'].apply(add_percent)
     df_full_url_sorted_similarity_score_desc = df_full_url_sorted_similarity_score_desc.rename(columns={'similarity_score': 'similarity'})
     results = df_full_url_sorted_similarity_score_desc.to_dict('records')
     return jsonify(results)
